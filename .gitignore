@@ -1,0 +1,96 @@
+############################
+# OS & Editor
+############################
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+.vscode/
+.idea/
+*.iml
+
+############################
+# Environment variables
+############################
+.env
+.env.*
+!.env.example
+
+############################
+# Node / JavaScript
+############################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+############################
+# Build outputs
+############################
+dist/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+coverage/
+
+############################
+# Backend specific
+############################
+logs/
+tmp/
+uploads/
+*.pid
+
+############################
+# NestJS / TypeScript
+############################
+coverage/
+*.tsbuildinfo
+.nest-cli.json.tmp
+
+############################
+# Frontend frameworks
+############################
+.cache/
+.parcel-cache/
+.eslintcache
+
+############################
+# Testing
+############################
+coverage/
+.nyc_output/
+
+############################
+# Database
+############################
+*.sqlite
+*.sqlite3
+*.db
+data/
+dump/
+
+############################
+# Docker
+############################
+docker-compose.override.yml
+
+############################
+# Python (if ML / scripts used)
+############################
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.env/
+
+############################
+# Misc
+############################
+*.tgz
+*.zip
+*.bak
