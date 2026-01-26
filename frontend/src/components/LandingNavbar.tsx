@@ -13,7 +13,7 @@ export const LandingNavbar = () => {
           <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
             <WalletCards className="w-5 h-5" />
           </div>
-          <span>SubTrack</span>
+          <span>Spendo</span>
         </div>
 
         {/* Auth Actions */}
