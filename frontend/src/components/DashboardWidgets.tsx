@@ -1,44 +1,19 @@
 // apps/web/src/features/dashboard/components/DashboardWidgets.tsx
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, MoreHorizontal, CalendarClock, CreditCard } from 'lucide-react';
+import { 
+  BarChart, Bar, Line, ComposedChart, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell 
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-// import { Button } from '@/components/ui/button';
+// import { Badge } from '@/components/ui/badge';
+import { format, isSameDay } from 'date-fns';
+import { upcomingBills } from '../pages/data/mockData';
 
-// --- 1. Spending Chart Widget ---
-export const SpendingChart = ({ data }: { data: any[] }) => (
-  <Card className="col-span-4 lg:col-span-3 border-none shadow-xl bg-linear-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950">
-    <CardHeader>
-      <CardTitle>Spending Trends</CardTitle>
-    </CardHeader>
-    <CardContent className="h-62.5 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8884d8" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-          <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-          <Tooltip 
-            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '8px', border: 'none' }} 
-            itemStyle={{ color: '#1e293b' }}
-          />
-          <Area type="monotone" dataKey="amount" stroke="#8884d8" fillOpacity={1} fill="url(#colorAmount)" strokeWidth={2} />
-        </AreaChart>
-      </ResponsiveContainer>
-    </CardContent>
-  </Card>
-);
-
-// --- 2. Stat Card Widget ---
-export const StatCard = ({ title, value, subtext, trend }: any) => (
-  <Card className="hover:scale-105 transition-transform duration-200 cursor-pointer border-l-4 border-l-primary shadow-sm">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+// --- 1. KPI Pulse Card ---
+export const KpiCard = ({ title, value, subtext, icon: Icon, alert = false }: any) => (
+  <Card className={`relative overflow-hidden ${alert ? 'border-amber-500/50 bg-amber-50/10' : ''}`}>
+    <CardHeader className="flex flex-row items-center justify-between pb-2">
       <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      {trend === 'up' ? <ArrowUpRight className="h-4 w-4 text-rose-500" /> : <ArrowDownRight className="h-4 w-4 text-emerald-500" />}
+      {Icon && <Icon className={`h-4 w-4 ${alert ? 'text-amber-500' : 'text-primary'}`} />}
     </CardHeader>
     <CardContent>
       <div className="text-2xl font-bold">{value}</div>
@@ -47,24 +22,95 @@ export const StatCard = ({ title, value, subtext, trend }: any) => (
   </Card>
 );
 
-// --- 3. Budget Health Widget ---
-export const BudgetHealth = ({ spent, total }: { spent: number, total: number }) => {
-  const percentage = Math.min((spent / total) * 100, 100);
+// --- 2. Spending Velocity Chart (Composed) ---
+export const VelocityChart = ({ data }: { data: any[] }) => (
+  <Card className="col-span-full lg:col-span-4 h-[350px]">
+    <CardHeader>
+      <CardTitle>Spending Velocity (Last 7 Days)</CardTitle>
+    </CardHeader>
+    <CardContent className="h-[280px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={data}>
+          <XAxis dataKey="day" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+          <YAxis yAxisId="left" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+          <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+          <Tooltip 
+             contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+          />
+          {/* Daily Spend Bar */}
+          <Bar yAxisId="left" dataKey="spend" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.8} />
+          {/* Cumulative Trend Line */}
+          <Line yAxisId="right" type="monotone" dataKey="cumulative" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </CardContent>
+  </Card>
+);
+
+// --- 3. Category Donut Chart ---
+export const CategoryDonut = ({ data }: { data: any[] }) => (
+  <Card className="col-span-full lg:col-span-2 h-[350px]">
+    <CardHeader>
+      <CardTitle>Cost Distribution</CardTitle>
+    </CardHeader>
+    <CardContent className="h-[280px] flex items-center justify-center">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={80}
+            paddingAngle={5}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+            ))}
+          </Pie>
+          <Tooltip />
+        </PieChart>
+      </ResponsiveContainer>
+    </CardContent>
+  </Card>
+);
+
+// --- 4. Billing Timeline Strip ---
+export const BillingTimeline = () => {
+  // Generate next 14 days
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    return date;
+  });
+
   return (
-    <Card className="col-span-4 lg:col-span-1 bg-primary text-primary-foreground shadow-xl border-none relative overflow-hidden">
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/20 rounded-full blur-xl" />
+    <Card className="col-span-full">
       <CardHeader>
-        <CardTitle className="text-white/90">Monthly Budget</CardTitle>
+        <CardTitle>Billing Forecast</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-4xl font-extrabold tracking-tight">${total - spent}</div>
-        <p className="text-sm text-white/80">Remaining available</p>
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span>Spent: ${spent}</span>
-            <span>Limit: ${total}</span>
-          </div>
-          <Progress value={percentage} className="h-2 bg-black/20" />
+      <CardContent>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {days.map((date, i) => {
+            const bill = upcomingBills.find(b => isSameDay(b.date, date));
+            const isToday = i === 0;
+
+            return (
+              <div key={i} className={`flex flex-col items-center min-w-[60px] p-2 rounded-xl border ${isToday ? 'bg-primary/5 border-primary' : 'bg-card'}`}>
+                <span className="text-xs text-muted-foreground mb-1">{format(date, 'EEE')}</span>
+                <span className={`text-sm font-bold mb-2 ${isToday ? 'text-primary' : ''}`}>{format(date, 'd')}</span>
+                
+                {bill ? (
+                  <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center animate-in zoom-in">
+                    <span className="text-[10px] font-bold text-red-600">${Math.round(bill.amount)}</span>
+                  </div>
+                ) : (
+                  <div className="h-1 w-1 rounded-full bg-muted-foreground/30 mt-3" />
+                )}
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
