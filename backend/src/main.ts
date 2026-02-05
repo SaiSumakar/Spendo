@@ -1,19 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DataSource } from 'typeorm';
+import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const dataSource = app.get(DataSource);
+  app.use(cookieParser());
 
-  try {
-    await dataSource.query('SELECT 1');
-    console.log('Database connection OK');
-  } catch (err) {
-    console.error('Database connection FAILED', err);
-  }
+  app.enableCors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  });
 
+  app.useGlobalPipes(new ValidationPipe())
 
   await app.listen(process.env.PORT ?? 3000);
 }
