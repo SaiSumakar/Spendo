@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { DataSource } from 'typeorm';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,6 +15,15 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe())
+
+  const config = new DocumentBuilder().setTitle('Spendo')
+    .setDescription('Spendo API Description')
+    .setVersion('1.0')
+    .addTag('spendo')
+    .build();
+
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
 
   await app.listen(process.env.PORT ?? 3000);
 }
