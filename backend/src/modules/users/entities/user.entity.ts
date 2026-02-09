@@ -1,6 +1,5 @@
+import { Subscription } from 'src/modules/subscriptions/entities/subscription.entity';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-// We will create Subscription entity later, but we can define the relation now
-// import { Subscription } from '../../subscriptions/entities/subscription.entity'; 
 
 @Entity()
 export class User {
@@ -34,6 +33,6 @@ export class User {
   updatedAt: Date;
 
   // We will uncomment this once we generate the Subscriptions resource
-  // @OneToMany(() => Subscription, (sub) => sub.user)
-  // subscriptions: Subscription[];
+  @OneToMany(() => Subscription, (sub) => sub.user)
+  subscriptions: Subscription[];
 }
