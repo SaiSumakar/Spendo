@@ -9,31 +9,41 @@ const api = axios.create({
 
 let isHandling401 = false;
 
-api.interceptors.response.use((res) => res,
-    async (error) => {
-        const status = error?.response?.status;
+api.interceptors.response.use(
+  (res) => res,
 
-        if(status === 401 && !isHandling401) {
-            isHandling401 = true;
-            try {
-                await api.post('/auth/logout')
-            } catch (error) {
-                // ignore
-            }
+  async (error) => {
+    const status = error?.response?.status;
 
-            useAuthStore.getState().logout();
-            if (window.location.pathname !== "/login") {
-                window.location.href = "/login";
-            }
+    if (status === 401 && !isHandling401) {
 
-            // reset guard after redirect tick
-            setTimeout(() => {
-                isHandling401 = false;
-            }, 1000);
-        }
+      const { isAuthenticated } = useAuthStore.getState();
 
+      // ✅ only handle if user WAS logged in
+      if (!isAuthenticated) {
         return Promise.reject(error);
+      }
+
+      isHandling401 = true;
+
+      try {
+        await api.post('/auth/logout');
+      } catch {}
+
+      useAuthStore.getState().logout();
+
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+
+      setTimeout(() => {
+        isHandling401 = false;
+      }, 1000);
     }
+
+    return Promise.reject(error);
+  }
 );
+
 
 export default api;
