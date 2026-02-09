@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthLayout } from '../components/AuthLayout';
 
+import api from '@/lib/axios';
+import { useAuthStore } from '@/stores/useAuthStore';
+
 // 1. Define Validation Schema
 const signupSchema = z.object({
   fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -21,6 +24,9 @@ const signupSchema = z.object({
 type SignupValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
+
+  const setNewUser = useAuthStore((state) => state.setUser);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
@@ -31,12 +37,22 @@ export default function SignupPage() {
   async function onSubmit(data: SignupValues) {
     setIsLoading(true);
     
-    // Simulate API Call
-    setTimeout(() => {
-      console.log('Signup Data:', data);
-      setIsLoading(false);
+    try {
+      const res = await api.post('/auth/signup', {
+        email: data.email,
+        password: data.password,
+        name: data.fullName
+      })
+      const { user } = res.data;
+
+      setNewUser(user);
       navigate('/dashboard');
-    }, 2000);
+      
+    } catch (error: any) {
+      console.error('Signup failed:', error?.response?.data?.message || 'Error');
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

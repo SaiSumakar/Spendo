@@ -8,6 +8,14 @@ import express from 'express';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: 'lax' as const, // since frontend and backend are on different ports
+    path: '/',
+    maxAge: 24 * 60 * 60 * 1000,
+  };
+
   @Post('signup')
   async signup(@Body() dto: CreateUserDto, @Res({ passthrough: true }) res: express.Response) {
     const { access_token, user } = await this.authService.signup(dto);
@@ -23,12 +31,14 @@ export class AuthController {
     return { user };
   }
 
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: express.Response) {
+    res.clearCookie('Authentication', this.cookieOptions);
+    console.log("Logged out...............")
+    return { message: 'Logged out' };
+  }
+
   private setCookie(res: express.Response, token: string) {
-    res.cookie('Authentication', token, {
-      httpOnly: true, // JS can't access this
-      secure: process.env.NODE_ENV === "production", // https only in production
-      sameSite: 'strict', // CSRF protection
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    })
+    res.cookie('Authentication', token, this.cookieOptions)
   }
 }

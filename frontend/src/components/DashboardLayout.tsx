@@ -12,6 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useNavigate, Link, useLocation } from "react-router-dom"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import api from "@/lib/axios"
+import { useAuthStore } from "@/stores/useAuthStore"
 
 export const DashboardLayout = ({
   children,
@@ -21,6 +23,17 @@ export const DashboardLayout = ({
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+      useAuthStore.getState().logout();
+      navigate('/login');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-900 flex">
@@ -94,7 +107,7 @@ export const DashboardLayout = ({
               "w-full gap-2 text-red-500 hover:text-red-600 hover:bg-red-50",
               collapsed ? "justify-center" : "justify-start"
             )}
-            onClick={() => navigate("/login")}
+            onClick={handleLogout}
           >
             <LogOut className="w-4 h-4" />
             {!collapsed && <span>Logout</span>}

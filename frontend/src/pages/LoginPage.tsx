@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label'; // Assuming shadcn components exist
 import { AuthLayout } from '../components/AuthLayout';
 
+import api from '@/lib/axios';
+import { useAuthStore } from '@/stores/useAuthStore';
+
 // 1. Define Validation Schema
 const loginSchema = z.object({
   email: z.email({ message: "Please enter a valid email address" }),
@@ -20,6 +23,9 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+
+  const setUser = useAuthStore((state) => state.setUser);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
@@ -31,13 +37,21 @@ export default function LoginPage() {
   // 3. Handle Submit
   async function onSubmit(data: LoginValues) {
     setIsLoading(true);
-    
-    // Simulate API Call
-    setTimeout(() => {
-      console.log('Login Data:', data);
+    try {
+      const res = await api.post('/auth/login', {
+        email: data.email,
+        password: data.password,
+      })
+
+      const {user} = res.data;
+
+      setUser(user);
+      navigate('/dashboard')
+    } catch (error: any) {
+      console.error('Login failed:', error?.response?.data?.message || 'Error');
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard'); // Redirect after login
-    }, 2000);
+    }
   }
 
   return (
