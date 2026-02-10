@@ -3,7 +3,8 @@ import { format } from 'date-fns';
 import { CalendarClock, CreditCard, MoreVertical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { Subscription } from '../pages/data/mockSubscriptions';
+// import type { Subscription } from '../pages/data/mockSubscriptions';
+import type { Subscription } from '../types/subscription.types';
 
 interface SubscriptionItemProps {
   subscription: Subscription;
@@ -46,7 +47,7 @@ export const SubscriptionListItem = ({ subscription, onClick }: SubscriptionItem
 
       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
          <div className="text-right">
-           <p className="font-bold text-xl">{currencySymbol}{subscription.price.toFixed(2)}</p>
+           <p className="font-bold text-xl">{currencySymbol}{Number(subscription.price)}</p>
          </div>
          <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
            <MoreVertical className="w-5 h-5" />

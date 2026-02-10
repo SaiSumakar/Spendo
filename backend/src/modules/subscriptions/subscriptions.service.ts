@@ -3,7 +3,7 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subscription, BillingFrequency } from './entities/subscription.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { addMonths, addYears, addWeeks, parseISO, sub } from 'date-fns';
 
 @Injectable()
@@ -45,11 +45,37 @@ export class SubscriptionsService {
     return sub;
   }
 
-  update(id: number, updateSubscriptionDto: UpdateSubscriptionDto) {
-    return `This action updates a #${id} subscription`;
+  async update(id: string, userId: string, dto: UpdateSubscriptionDto) {
+    const sub = await this.subRepo.findOne({ where: { id, userId }});
+    
+    if(!sub) {
+      throw new NotFoundException(`Subscription with id ${id} not found`);
+    }
+
+    if (dto.startDate || dto.frequency) {
+      const newStart = dto.startDate || sub.startDate;
+      const newFreq = dto.frequency || sub.frequency;
+      
+      const newNextBilling = this.calcNextBillingDate(newStart, newFreq);
+      sub.nextBillingDate = newNextBilling.toISOString().split('T')[0];
+    }
+    Object.assign(sub, dto);
+    
+    return this.subRepo.save(sub);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} subscription`;
+  async remove(id: string, userId: string) {
+    const sub = await this.subRepo.findOne({ where: { id, userId }});
+
+    if(!sub) {
+      throw new NotFoundException(`Subscription with id ${id} not found`);
+    }
+
+    await this.subRepo.remove(sub);
+
+    return {
+      message: 'Subscription deleted successfully',
+      id,
+    };
   }
 }

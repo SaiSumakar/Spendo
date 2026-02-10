@@ -16,7 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { Subscription } from '../pages/data/mockSubscriptions'; // Import the interface
+import type { Subscription } from '../types/subscription.types';
 
 interface SubscriptionDialogProps {
   open: boolean;
@@ -34,7 +34,7 @@ export const SubscriptionDialog = ({
   onDelete
 }: SubscriptionDialogProps) => {
   const isEditMode = !!subscription;
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, reset, formState: { errors, isSubmitting } } = useForm();
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -62,19 +62,19 @@ export const SubscriptionDialog = ({
       price: Number(data.price), // Ensure number type
       id: subscription?.id // Pass ID if editing
     });
-    onOpenChange(false);
+    // onOpenChange(false);
   };
 
   const handleDelete = () => {
     if (subscription?.id) {
       onDelete(subscription.id);
-      onOpenChange(false);
+      // onOpenChange(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Subscription' : 'Add New Subscription'}</DialogTitle>
         </DialogHeader>
@@ -100,7 +100,7 @@ export const SubscriptionDialog = ({
               <div className="flex gap-2">
                 <Input type="number" step="0.01" placeholder="0.00" {...register('price', { required: true })} />
                 <Select onValueChange={(v) => setValue('currency', v)} defaultValue={subscription?.currency || 'USD'}>
-                   <SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger>
+                   <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="USD">USD</SelectItem>
                      <SelectItem value="EUR">EUR</SelectItem>
@@ -147,8 +147,8 @@ export const SubscriptionDialog = ({
                </Button>
             ) : <div />} 
             
-            <Button type="submit">
-              {isEditMode ? 'Update Changes' : 'Add Subscription'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : (isEditMode ? 'Update' : 'Add')}
             </Button>
           </DialogFooter>
         </form>

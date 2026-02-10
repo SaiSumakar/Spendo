@@ -6,11 +6,21 @@ import { SubscriptionListItem } from '../components/SubscriptionListItem';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, Filter } from 'lucide-react';
-import { initialSubscriptions, type Subscription } from './data/mockSubscriptions';
+import { useSubscriptions } from '@/hooks/useSubscriptions';
+import type { Subscription, CreateSubscriptionDto, UpdateSubscriptionDto } from '../types/subscription.types';
 
 export default function SubscriptionsPage() {
   // --- MOCK STATE MANAGEMENT ---
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(initialSubscriptions);
+  const { 
+    subscriptions, 
+    isLoading, 
+    isError, 
+    createSubscription, 
+    updateSubscription, 
+    deleteSubscription, 
+  } = useSubscriptions();
+
+  // const [subscriptions, setSubscriptions] = useState<Subscription[]>(initialSubscriptions);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -30,37 +40,44 @@ export default function SubscriptionsPage() {
     setIsDialogOpen(true);
   };
 
-  // 3. Handle Save (Create or Update)
-  const handleSave = (data: Partial<Subscription>) => {
-    if (data.id) {
-      // UPDATE EXISTING
-      setSubscriptions(prev => prev.map(sub => 
-        sub.id === data.id 
-          ? { ...sub, ...data } as Subscription 
-          : sub
-      ));
-    } else {
-      // CREATE NEW
-      const newSub: Subscription = {
-        ...data,
-        id: Math.random().toString(36).substr(2, 9), // Fake ID
-        nextBillingDate: data.startDate!, // Just copy start date for now
-      } as Subscription;
-      
-      setSubscriptions(prev => [...prev, newSub]);
+  // The 'data' parameter here is inferred from the child component, 
+  // but we can type guard it to be safe.
+  const handleSave = async (data: CreateSubscriptionDto | UpdateSubscriptionDto) => {
+    try {
+      if (selectedSubscription) {
+        // Edit Mode
+        await updateSubscription({ 
+          id: selectedSubscription.id, 
+          data: data as UpdateSubscriptionDto 
+        });
+      } else {
+        // Add Mode
+        await createSubscription(data as CreateSubscriptionDto);
+      }
+      setIsDialogOpen(false); // Close only on success
+    } catch (error) {
+      console.error("Failed to save subscription", error);
+      // Optional: Add toast notification here
     }
   };
 
   // 4. Handle Delete
-  const handleDelete = (id: string) => {
-    setSubscriptions(prev => prev.filter(sub => sub.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      if (confirm("Are you sure you want to delete this subscription?")) {
+        await deleteSubscription(id);
+        setIsDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to delete subscription", error);
+    }
   };
 
-  // Filter Logic
-  const filteredSubscriptions = subscriptions.filter(sub => 
+  // Filter Logic with Type Safety
+  const filteredSubscriptions = subscriptions?.filter((sub) => 
     sub.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    sub.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    sub.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) ?? [];
 
   return (
     <DashboardLayout>
@@ -92,13 +109,10 @@ export default function SubscriptionsPage() {
         </div>
 
         <div className="space-y-4">
-          {filteredSubscriptions.length === 0 ? (
-            <div className="text-center py-20 border rounded-xl border-dashed">
-              <p className="text-muted-foreground">No subscriptions found.</p>
-              <Button variant="link" onClick={handleAddNew}>Add your first one</Button>
-            </div>
+          {isLoading ? (
+            <p>Loading your finances...</p>
           ) : (
-            filteredSubscriptions.map((sub) => (
+            filteredSubscriptions.map((sub: Subscription) => (
               <SubscriptionListItem 
                 key={sub.id} 
                 subscription={sub} 
