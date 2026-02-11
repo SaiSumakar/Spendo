@@ -5,6 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { json2csv } from 'json-2-csv';
+
 @Injectable()
 export class UsersService {
 
@@ -45,7 +47,7 @@ export class UsersService {
     return users;
   }
 
-  async findOne(id: string) {
+  async getProfile(id: string) {
     const userFound = await this.userRepo.findOne({where: { id }})
 
     if (!userFound) {
@@ -64,6 +66,10 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
+    if (Object.keys(updateUserDto).length === 0) {
+      throw new BadRequestException('No fields provided for update');
+    }
+
     const user = await this.userRepo.preload({
       id,
       ...updateUserDto
@@ -77,8 +83,8 @@ export class UsersService {
       // user.password = bcrypt.hash(updateUserDto.password, 10)
       user.password = await bcrypt.hash(updateUserDto.password, 10);
     }
-
-    return `This action updates a #${id} user`;
+    const savedUser = await this.userRepo.save(user);
+    return savedUser;
   }
 
   async remove(id: string) {
@@ -91,5 +97,30 @@ export class UsersService {
     return {
       message: "User deleted successfully",
     };
+  }
+
+  async exportData(id: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: id },
+      relations: ['subscriptions']
+    });
+
+    if(!user) throw new NotFoundException('User not found');
+
+    const fields = ['Name', 'Price', 'Currency', 'Frequency', 'Next Billing', 'Category'];
+    const data = user.subscriptions.map((sub) => ({
+      Name: sub.name,
+      Price: Number(sub.price),
+      Currency: sub.currency,
+      Frequency: sub.frequency,
+      'Next Billing': sub.nextBillingDate,
+      Category: sub.category
+    }));
+
+    const csv = await json2csv(data, {
+      expandArrayObjects: false,
+      expandNestedObjects: false,
+    });
+    return csv;
   }
 }

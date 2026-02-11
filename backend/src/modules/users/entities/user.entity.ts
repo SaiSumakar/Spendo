@@ -15,17 +15,41 @@ export class User {
   @Column({ nullable: true })
   name: string;
 
-  // Settings
+  @Column({ nullable: true })
+  avatarUrl: string;
+
+  // preferences
   @Column({ default: 'INR' })
   currency: string;
+
+  @Column({ default: 'English' })
+  language: string;
 
   @Column({ default: 'system' })
   theme: string;
 
+  // monthly budget
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 500.00 })
   monthlyLimit: number;
 
-  // Timestamps
+  // --- NOTIFICATIONS ---
+  @Column({ default: true })
+  emailAlerts: boolean;
+
+  @Column({ default: false })
+  pushAlerts: boolean;
+
+  @Column({ type: 'int', default: 3 })
+  daysBeforeBill: number;
+
+  // Budget reset cycle
+  @Column({ type: 'int', default: 1 })
+  budgetResetDay: number; 
+
+  @Column({ default: 'monthly' })
+  budgetCycle: 'monthly' | 'weekly';
+
+  // Timestamps and relationships
   @CreateDateColumn()
   createdAt: Date;
 

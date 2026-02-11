@@ -1,5 +1,5 @@
 // apps/web/src/features/settings/SettingsPage.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   User, 
   Bell, 
@@ -8,7 +8,9 @@ import {
   Download, 
   Save,
   Monitor,
-  LogOut
+  LogOut,
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -31,21 +33,25 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { initialSettings } from './data/mockSettings';
+import { useSettings } from '@/hooks/useSettings';
+// import { initialSettings } from './data/mockSettings';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account');
-  const [settings, setSettings] = useState(initialSettings);
-  const [isSaving, setIsSaving] = useState(false);
+  
+  const { settings, isLoading, updateSettings, isSaving, exportData, deleteAccount } = useSettings();
+  const [form, setForm] = useState<any>(null);
 
+  
+  useEffect(() => {
+    if (settings) setForm(settings);
+  }, [settings]);
+  console.log("settings brp", settings, form);
+  
   // Simulation of an API call
-  const handleSave = () => {
-    setIsSaving(true);
-    // Simulate network delay
-    setTimeout(() => {
-      setIsSaving(false);
-      alert("Settings saved successfully!"); // Replace with a toast notification in production
-    }, 1000);
+  const handleSave = async () => {
+    // console.log("new ones", form);
+    await updateSettings(form);
   };
 
   const menuItems = [
@@ -54,6 +60,14 @@ export default function SettingsPage() {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'billing', label: 'Budget & Data', icon: Wallet },
   ];
+
+  if (isLoading || !form) {
+    return <div className="p-8 flex items-center gap-2">
+      <Loader2 className="animate-spin w-4 h-4" />
+      Loading settings...
+    </div>;
+  }
+
 
   return (
     <DashboardLayout>
@@ -100,7 +114,7 @@ export default function SettingsPage() {
                   <CardContent className="space-y-6">
                     <div className="flex items-center gap-6">
                       <Avatar className="h-20 w-20 border">
-                        <AvatarImage src={settings.profile.avatar} />
+                        <AvatarImage src={form.avatarUrl} />
                         <AvatarFallback>AD</AvatarFallback>
                       </Avatar>
                       <Button variant="outline">Change Avatar</Button>
@@ -110,14 +124,16 @@ export default function SettingsPage() {
                       <Label htmlFor="displayName">Display Name</Label>
                       <Input 
                         id="displayName"
-                        defaultValue={settings.profile.name} 
-                        onChange={(e) => setSettings({...settings, profile: {...settings.profile, name: e.target.value}})}
+                        value={form.name}
+                        onChange={(e) =>
+                          setForm({...form, name: e.target.value})
+                        }
                       />
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" defaultValue={settings.profile.email} disabled className="bg-muted text-muted-foreground" />
+                      <Input id="email" defaultValue={form.email} disabled className="bg-muted text-muted-foreground" />
                       <p className="text-[0.8rem] text-muted-foreground">Email cannot be changed in demo mode.</p>
                     </div>
                   </CardContent>
@@ -138,8 +154,8 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label>Base Currency</Label>
                         <Select 
-                          defaultValue={settings.preferences.currency}
-                          onValueChange={(val) => setSettings({...settings, preferences: {...settings.preferences, currency: val}})}
+                          value={form.currency}
+                          onValueChange={ (val) => setForm({...form,currency: val}) }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select currency" />
@@ -197,8 +213,8 @@ export default function SettingsPage() {
                         <p className="text-sm text-muted-foreground">Receive daily digests and bill reminders.</p>
                       </div>
                       <Switch 
-                        checked={settings.notifications.emailAlerts}
-                        onCheckedChange={(checked) => setSettings({...settings, notifications: {...settings.notifications, emailAlerts: checked}})}
+                        checked={form.emailAlerts}
+                        onCheckedChange={(checked) => setForm({ ...form,emailAlerts: checked })}
                       />
                     </div>
                     <Separator />
@@ -208,8 +224,9 @@ export default function SettingsPage() {
                         <p className="text-sm text-muted-foreground">Receive real-time alerts on your device.</p>
                       </div>
                       <Switch 
-                        checked={settings.notifications.pushAlerts} 
-                        onCheckedChange={(checked) => setSettings({...settings, notifications: {...settings.notifications, pushAlerts: checked}})}
+                        checked={form.pushAlerts} 
+                        onCheckedChange={(checked) =>
+                          setForm({ ...form, pushAlerts: checked })}
                       />
                     </div>
                     <Separator />
@@ -217,18 +234,24 @@ export default function SettingsPage() {
                       <div className="flex justify-between">
                         <Label>Reminder Timing</Label>
                         <span className="text-sm text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                          {settings.notifications.daysBeforeBill} days before
+                          {form.daysBeforeBill} days before
                         </span>
                       </div>
-                      <input 
-                        type="range" 
-                        min="1" 
-                        max="7" 
+
+                      <input
+                        type="range"
+                        min="1"
+                        max="7"
                         className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                        defaultValue={settings.notifications.daysBeforeBill}
-                        onChange={(e) => setSettings({...settings, notifications: {...settings.notifications, daysBeforeBill: parseInt(e.target.value)}})} 
+                        value={form.daysBeforeBill}
+                        onChange={(e) =>
+                          setForm({...form, daysBeforeBill: Number(e.target.value)})
+                        }
                       />
-                      <p className="text-[0.8rem] text-muted-foreground">We will alert you this many days before a bill triggers.</p>
+
+                      <p className="text-[0.8rem] text-muted-foreground">
+                        We will alert you this many days before a bill triggers.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -249,10 +272,12 @@ export default function SettingsPage() {
                        <div className="relative">
                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                          <Input 
-                           type="number" 
-                           className="pl-8 font-mono" 
-                           defaultValue={settings.budget.monthlyLimit}
-                           onChange={(e) => setSettings({...settings, budget: {...settings.budget, monthlyLimit: parseInt(e.target.value)}})}
+                            type="number" 
+                            className="pl-8 font-mono" 
+                            value={form.monthlyLimit}
+                            onChange={(e) =>
+                              setForm({...form, monthlyLimit: Number(e.target.value)})
+                            }
                          />
                        </div>
                        <p className="text-[0.8rem] text-muted-foreground">Used to calculate your "Safe to Spend" metric on the dashboard.</p>
@@ -263,7 +288,11 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <h3 className="font-medium flex items-center gap-2"><Download className="w-4 h-4"/> Export Data</h3>
                       <p className="text-sm text-muted-foreground">Download all your subscriptions and transactions as a CSV file.</p>
-                      <Button variant="outline" className="mt-2 gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="mt-2 gap-2"
+                        onClick={exportData}  
+                      >
                         <Download className="w-4 h-4" /> Download .CSV
                       </Button>
                     </div>
@@ -273,8 +302,12 @@ export default function SettingsPage() {
                     <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/10 dark:border-red-900">
                       <h3 className="font-medium text-red-600 flex items-center gap-2"><Shield className="w-4 h-4"/> Danger Zone</h3>
                       <p className="text-sm text-red-600/80 mt-1">Once you delete your account, there is no going back.</p>
-                      <Button variant="destructive" className="mt-4 gap-2">
-                        <LogOut className="w-4 h-4" /> Delete Account
+                      <Button 
+                        variant="destructive" 
+                        className="mt-4 gap-2"
+                        onClick={deleteAccount}
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete Account
                       </Button>
                     </div>
                   </CardContent>
