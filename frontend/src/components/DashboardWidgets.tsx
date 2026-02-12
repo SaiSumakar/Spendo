@@ -1,12 +1,28 @@
 // apps/web/src/features/dashboard/components/DashboardWidgets.tsx
 import { 
-  BarChart, Bar, Line, ComposedChart, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell 
+  Bar, Line, ComposedChart, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+  PieChart, Pie
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import { Badge } from '@/components/ui/badge';
-import { format, isSameDay } from 'date-fns';
-import { upcomingBills } from '../pages/data/mockData';
+import { format, isSameDay, eachDayOfInterval, endOfMonth } from 'date-fns';
+
+type Bill = {
+  id: string;
+  name: string;
+  amount: number;
+  date: string;
+};
+
+type BillingTimelineProps = {
+  bills: Bill[];
+  currency: string;
+  formatCurrency: (
+    amount: number,
+    currency: string,
+    locale?: string
+  ) => string;
+};
 
 // --- 1. KPI Pulse Card ---
 export const KpiCard = ({ title, value, subtext, icon: Icon, alert = false }: any) => (
@@ -24,11 +40,11 @@ export const KpiCard = ({ title, value, subtext, icon: Icon, alert = false }: an
 
 // --- 2. Spending Velocity Chart (Composed) ---
 export const VelocityChart = ({ data }: { data: any[] }) => (
-  <Card className="col-span-full lg:col-span-4 h-[350px]">
+  <Card className="col-span-full lg:col-span-4 h-87.5">
     <CardHeader>
       <CardTitle>Spending Velocity (Last 7 Days)</CardTitle>
     </CardHeader>
-    <CardContent className="h-[280px]">
+    <CardContent className="h-70">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data}>
           <XAxis dataKey="day" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
@@ -49,11 +65,11 @@ export const VelocityChart = ({ data }: { data: any[] }) => (
 
 // --- 3. Category Donut Chart ---
 export const CategoryDonut = ({ data }: { data: any[] }) => (
-  <Card className="col-span-full lg:col-span-2 h-[350px]">
+  <Card className="col-span-full lg:col-span-2 h-87.5">
     <CardHeader>
       <CardTitle>Cost Distribution</CardTitle>
     </CardHeader>
-    <CardContent className="h-[280px] flex items-center justify-center">
+    <CardContent className="h-70 flex items-center justify-center">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -64,12 +80,49 @@ export const CategoryDonut = ({ data }: { data: any[] }) => (
             outerRadius={80}
             paddingAngle={5}
             dataKey="value"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-            ))}
-          </Pie>
-          <Tooltip />
+            shape={(props: any) => {
+              const { cx, cy, startAngle, endAngle, innerRadius, outerRadius, payload } = props;
+              const RADIAN = Math.PI / 180;
+
+              const x1 = cx + innerRadius * Math.cos(-startAngle * RADIAN);
+              const y1 = cy + innerRadius * Math.sin(-startAngle * RADIAN);
+              const x2 = cx + outerRadius * Math.cos(-startAngle * RADIAN);
+              const y2 = cy + outerRadius * Math.sin(-startAngle * RADIAN);
+              const x3 = cx + outerRadius * Math.cos(-endAngle * RADIAN);
+              const y3 = cy + outerRadius * Math.sin(-endAngle * RADIAN);
+              const x4 = cx + innerRadius * Math.cos(-endAngle * RADIAN);
+              const y4 = cy + innerRadius * Math.sin(-endAngle * RADIAN);
+
+              const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+              const path = `
+                M ${x1} ${y1}
+                L ${x2} ${y2}
+                A ${outerRadius} ${outerRadius} 0 ${largeArc} 0 ${x3} ${y3}
+                L ${x4} ${y4}
+                A ${innerRadius} ${innerRadius} 0 ${largeArc} 1 ${x1} ${y1}
+                Z
+              `;
+
+              return (
+                <path
+                  d={path}
+                  fill={payload.color}
+                  stroke="none"
+                />
+              );
+            }}
+          />
+          <Tooltip
+            formatter={(value: number | undefined) =>
+              new Intl.NumberFormat("en-IN", {
+                style: "currency",
+                currency: "INR",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              }).format(value ?? 0)
+            }
+          />
         </PieChart>
       </ResponsiveContainer>
     </CardContent>
@@ -77,42 +130,74 @@ export const CategoryDonut = ({ data }: { data: any[] }) => (
 );
 
 // --- 4. Billing Timeline Strip ---
-export const BillingTimeline = () => {
-  // Generate next 14 days
-  const days = Array.from({ length: 14 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
-    return date;
+export const BillingTimeline = ({
+  bills,
+  currency,
+  formatCurrency
+}: BillingTimelineProps) => {
+
+  const today = new Date();
+
+  const days = eachDayOfInterval({
+    start: today,
+    end: endOfMonth(today),
   });
 
   return (
-    <Card className="col-span-full">
+    <Card className="col-span-full w-full max-w-full overflow-hidden">
       <CardHeader>
-        <CardTitle>Billing Forecast</CardTitle>
+        <CardTitle>Billing Forecast (This Month)</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {days.map((date, i) => {
-            const bill = upcomingBills.find(b => isSameDay(b.date, date));
-            const isToday = i === 0;
 
-            return (
-              <div key={i} className={`flex flex-col items-center min-w-[60px] p-2 rounded-xl border ${isToday ? 'bg-primary/5 border-primary' : 'bg-card'}`}>
-                <span className="text-xs text-muted-foreground mb-1">{format(date, 'EEE')}</span>
-                <span className={`text-sm font-bold mb-2 ${isToday ? 'text-primary' : ''}`}>{format(date, 'd')}</span>
-                
-                {bill ? (
-                  <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center animate-in zoom-in">
-                    <span className="text-[10px] font-bold text-red-600">${Math.round(bill.amount)}</span>
-                  </div>
-                ) : (
-                  <div className="h-1 w-1 rounded-full bg-muted-foreground/30 mt-3" />
-                )}
-              </div>
-            );
-          })}
+      <CardContent className="w-full max-w-full overflow-hidden">
+        
+        {/* scroll container */}
+        <div className="w-full overflow-x-auto scrollbar-thin pb-3">
+          
+          {/* content strip */}
+          <div className="flex gap-3 w-max pr-2">
+            {days.map((date, i) => {
+              const bill = bills.find(b =>
+                isSameDay(new Date(b.date), date)
+              );
+
+              const isToday = i === 0;
+
+              return (
+                <div
+                  key={date.toISOString()}
+                  className={`
+                    flex flex-col items-center
+                    w-17.5 shrink-0
+                    p-2 rounded-xl border
+                    ${isToday ? 'bg-primary/5 border-primary' : 'bg-card'}
+                  `}
+                >
+                  <span className="text-xs text-muted-foreground mb-1">
+                    {format(date, 'EEE')}
+                  </span>
+
+                  <span className={`text-sm font-bold mb-2 ${isToday ? 'text-primary' : ''}`}>
+                    {format(date, 'd')}
+                  </span>
+
+                  {bill ? (
+                    <div className="h-9 w-9 rounded-full bg-red-100 flex items-center justify-center animate-in zoom-in">
+                      <span className="text-[10px] font-bold text-red-600 text-center leading-none">
+                        {formatCurrency(bill.amount, currency)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="h-1 w-1 rounded-full bg-muted-foreground/30 mt-3" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
         </div>
       </CardContent>
     </Card>
   );
 };
+

@@ -3,7 +3,8 @@ import {
   Activity, 
   CreditCard, 
   AlertTriangle, 
-  Wallet 
+  Wallet, 
+  Loader2
 } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { 
@@ -12,9 +13,38 @@ import {
   CategoryDonut, 
   BillingTimeline 
 } from '../components/DashboardWidgets';
-import { kpiStats, spendingVelocityData, categoryData } from './data/mockData';
+import { useDashboard } from '@/hooks/useDashboard';
+import { useSettings } from '@/hooks/useSettings';
+
+
+function formatCurrency(
+  amount: number,
+  currency: string,
+  locale = 'en-IN'
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
 
 export default function DashboardPage() {
+
+  const { data, isLoading, isError } = useDashboard();
+  const userCurrency = useSettings()?.settings?.currency;
+
+  console.log("financial data", data, isError, isLoading);
+
+  if (isLoading) return (
+    <div className="h-screen w-full flex items-center justify-center">
+      <Loader2 className="animate-spin h-8 w-8 text-primary" />
+    </div>
+  );
+
+  if (isError) return <div>Error loading financial data.</div>;
+
   return (
     <DashboardLayout>
       
@@ -22,43 +52,43 @@ export default function DashboardPage() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard 
           title="Monthly Run Rate" 
-          value={`$${kpiStats.runRate}`} 
-          subtext="+4% vs last month" 
+          value={`${formatCurrency(data.kpiStats.runRate, userCurrency)}`} 
           icon={Activity} 
         />
         <KpiCard 
           title="Safe to Spend" 
-          value={`$${kpiStats.safeToSpend}`} 
-          subtext="After fixed costs" 
+          value={`${formatCurrency(data.kpiStats.safeToSpend, userCurrency)}`} 
           icon={Wallet} 
         />
         <KpiCard 
           title="Active Subs" 
-          value={kpiStats.activeSubs} 
-          subtext="2 not used in 30d" 
+          value={data.kpiStats.activeSubs} 
           icon={CreditCard} 
         />
         <KpiCard 
           title="Trial Watch" 
-          value={kpiStats.trialWatch} 
-          subtext="Expiring in < 3 days" 
+          value={data.kpiStats.trialWatch} 
           icon={AlertTriangle} 
-          alert={true} 
+          alert={data.kpiStats.trialWatch > 0} 
         />
       </section>
 
       {/* 2. THE TRENDS (Main Visuals) */}
       <section className="grid gap-4 md:grid-cols-6">
         {/* Left: Velocity Chart (Takes up 4/6 columns) */}
-        <VelocityChart data={spendingVelocityData} />
+        <VelocityChart data={data.velocityData} />
         
         {/* Right: Distribution (Takes up 2/6 columns) */}
-        <CategoryDonut data={categoryData} />
+        <CategoryDonut data={data.categoryData} />
       </section>
 
       {/* 3. THE RADAR (Timeline & Upcoming) */}
       <section className="grid gap-4">
-        <BillingTimeline />
+        <BillingTimeline 
+          bills={data.upcomingBills}
+          currency={data.userCurrency || userCurrency}
+          formatCurrency={formatCurrency}
+        />
       </section>
 
     </DashboardLayout>

@@ -8,7 +8,6 @@ import {
   Download, 
   Save,
   Monitor,
-  LogOut,
   Loader2,
   Trash2
 } from 'lucide-react';
@@ -34,7 +33,6 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSettings } from '@/hooks/useSettings';
-// import { initialSettings } from './data/mockSettings';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account');
@@ -157,7 +155,7 @@ export default function SettingsPage() {
                           value={form.currency}
                           onValueChange={ (val) => setForm({...form,currency: val}) }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-36">
                             <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
                           <SelectContent>
@@ -172,7 +170,7 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label>Language</Label>
                         <Select defaultValue="English">
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="English">English</SelectItem>
                             <SelectItem value="Spanish">Spanish</SelectItem>
@@ -184,14 +182,20 @@ export default function SettingsPage() {
 
                     <div className="space-y-2">
                       <Label>Theme</Label>
-                      <div className="flex gap-4 pt-2">
-                        <div className="cursor-pointer border-2 border-primary rounded-md p-1">
-                          <div className="bg-slate-950 w-24 h-16 rounded flex items-center justify-center text-white text-xs shadow-sm">Dark</div>
-                        </div>
-                        <div className="cursor-pointer border rounded-md p-1 opacity-50 hover:opacity-100 transition-opacity">
-                          <div className="bg-white border w-24 h-16 rounded flex items-center justify-center text-black text-xs shadow-sm">Light</div>
-                        </div>
-                      </div>
+                      <Select
+                        value={form.theme ?? "system"}
+                        onValueChange={(value) => setForm({...form, theme: value})}
+                      >
+                        <SelectTrigger className="w-36">
+                          <SelectValue placeholder="Select theme" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          <SelectItem value="dark">Dark</SelectItem>
+                          <SelectItem value="light">Light</SelectItem>
+                          <SelectItem value="system">System</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </CardContent>
                 </Card>
