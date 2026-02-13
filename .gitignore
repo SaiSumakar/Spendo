@@ -94,3 +94,5 @@ venv/
 *.tgz
 *.zip
 *.bak
+
+AUTH_AUDIT_REPORT.md

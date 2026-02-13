@@ -12,6 +12,9 @@ export class User {
   @Column({ select: false }) // Security: Don't return password in queries by default
   password: string;
 
+  @Column({ type: "text", nullable: true, select: false })
+  refreshTokenHash: string | null;
+
   @Column({ nullable: true })
   name: string;
 

@@ -3,17 +3,19 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
     constructor(
         private userService: UsersService,
-        private jwtService: JwtService
+        private jwtService: JwtService,
+        private config: ConfigService,
     ) {}
 
     async signup(dto: CreateUserDto) {
         const user = await this.userService.create(dto)
-        return this.generateToken(user);
+        return this.generateTokens(user);
     }
 
     async login(email: string, password: string) {
@@ -29,18 +31,71 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials')
         }
 
-        return this.generateToken(user);
+        return this.generateTokens(user);
     }
 
-    private generateToken(user: any) {
+    async logout(userId: string) {
+        await this.userService.clearRefreshTokenHash(userId);
+    }
+
+    async refreshTokens(userId: string, refreshToken: string) {
+        const user = await this.userService.findByIdWithRefresh(userId);
+
+        if (!user || !user.refreshTokenHash) {
+            throw new UnauthorizedException();
+        }
+
+        const valid = await bcrypt.compare(
+            refreshToken,
+            user.refreshTokenHash,
+        );
+
+        if (!valid) throw new UnauthorizedException();
+
+        return this.generateTokens(user); // rotation happens here
+    }
+
+
+    private async generateTokens(user: any) {
         const payload = { email: user.email, sub: user.id };
+        const access_token = this.signAccessToken(payload);
+        const refresh_token = this.signRefreshToken(payload);
+
+        await this.setRefreshToken(user.id, refresh_token);
+
         return {
-            access_token: this.jwtService.sign(payload),
+            access_token,
+            refresh_token,
             user: {
                 id: user.id,
                 email: user.email,
                 name: user.name,
             }
         }
+    }
+
+    private signAccessToken(payload) {
+        return this.jwtService.sign(
+            payload,
+            {
+            secret: this.config.get('JWT_ACCESS_SECRET'),
+            expiresIn: this.config.get('JWT_ACCESS_EXPIRY'),
+            },
+        );
+    }
+
+    private signRefreshToken(payload) {
+        return this.jwtService.sign(
+            payload,
+            {
+            secret: this.config.get('JWT_REFRESH_SECRET'),
+            expiresIn: this.config.get('JWT_REFRESH_EXPIRY'),
+            },
+        );
+    }
+
+    private async setRefreshToken(userId: string, token: string) {
+        const hash = await bcrypt.hash(token, 10);
+        await this.userService.updateRefreshTokenHash(userId, hash);
     }
 }
