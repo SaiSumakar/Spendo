@@ -1,4 +1,5 @@
 import { Subscription } from 'src/modules/subscriptions/entities/subscription.entity';
+import { Transaction } from 'src/modules/transactions/entities/transaction.entity';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 
 @Entity()
@@ -62,4 +63,8 @@ export class User {
   // We will uncomment this once we generate the Subscriptions resource
   @OneToMany(() => Subscription, (sub) => sub.user)
   subscriptions: Subscription[];
+
+  @OneToMany(() => Transaction, tx => tx.user)
+  transactions: Transaction[];
+
 }

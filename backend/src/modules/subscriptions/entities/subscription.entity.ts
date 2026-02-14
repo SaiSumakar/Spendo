@@ -1,3 +1,4 @@
+import { Transaction } from "src/modules/transactions/entities/transaction.entity";
 import { User } from "src/modules/users/entities/user.entity";
 import { Entity, 
     PrimaryGeneratedColumn, 
@@ -5,7 +6,9 @@ import { Entity,
     ManyToOne, 
     JoinColumn, 
     CreateDateColumn, 
-    UpdateDateColumn 
+    UpdateDateColumn,
+    OneToMany,
+    Index
 } from "typeorm";
 
 export enum Currency {
@@ -50,10 +53,10 @@ export class Subscription {
     category: string;
 
     @Column({type: 'date'})
-    startDate: string;
+    startDate: Date;
 
     @Column({type: 'date'})
-    nextBillingDate: string;
+    nextBillingDate: Date;
 
     @Column({ nullable: true })
     websiteUrl: string;
@@ -62,12 +65,16 @@ export class Subscription {
     isTrial: boolean;
 
     // 3. Relationships
+    @Index()
     @Column()
     userId: string; // Foreign Key
 
     @ManyToOne(() => User, (user) => user.subscriptions, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'userId' })
     user: User;
+
+    @OneToMany(() => Transaction, tx => tx.subscription)
+    transactions: Transaction[];
 
     @CreateDateColumn()
     createdAt: Date;
