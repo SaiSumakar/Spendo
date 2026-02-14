@@ -37,6 +37,7 @@ export class DashboardService {
         const monthlyBurn = subs.reduce((sum, sub) => sum + this.getMonthlyCost(sub), 0);
         const safeToSpend = Number(user?.monthlyLimit) - monthlyBurn;
         const userCurrency = user?.currency
+        const monthlyLimit = Number(user?.monthlyLimit)
 
         const categoryTotals = {};
         subs.forEach(sub => {
@@ -84,6 +85,7 @@ export class DashboardService {
                 activeSubs: activeSubsCount,
                 trialWatch: trialsCount,
                 safeToSpend: safeToSpend > 0 ? safeToSpend : 0,
+                monthlyLimit: monthlyLimit
             },
             categoryData,
             velocityData,

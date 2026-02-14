@@ -15,6 +15,7 @@ import {
 } from '../components/DashboardWidgets';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useSettings } from '@/hooks/useSettings';
+import { BudgetProgressCard } from '@/components/BudgetProgressCard';
 
 
 function formatCurrency(
@@ -80,6 +81,17 @@ export default function DashboardPage() {
           alert={data.kpiStats.trialWatch > 0} 
         />
       </section>
+
+      {/* Budget Progress Bar Card */}
+      <section>
+        <BudgetProgressCard
+          spent={data.kpiStats.runRate}
+          budget={data.kpiStats.monthlyLimit}
+          currency={userCurrency}
+          formatCurrency={formatCurrency}
+        />
+      </section>
+
 
       {/* 2. THE TRENDS (Main Visuals) */}
       <section className="grid gap-4 md:grid-cols-6">

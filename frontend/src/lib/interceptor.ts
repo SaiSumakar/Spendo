@@ -24,13 +24,12 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = originalRequest?.url || "";
 
-    // 🚫 Skip refresh for these routes
+    // 🚫 Skip refresh for these routes (auth endpoints only)
     const skipRefresh =
       url.includes("/auth/login") ||
       url.includes("/auth/signup") ||
       url.includes("/auth/refresh") ||
-      url.includes("/auth/logout") ||
-      url.includes("/users/profile");
+      url.includes("/auth/logout");
 
     if (
       status === 401 &&
