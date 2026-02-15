@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import type { Transaction, CreateTransactionDto } from '@/types/transaction.types';
+import type { Transaction, CreateTransactionDto, UpdateTransactionDto } from '@/types/transaction.types';
 
 export const useTransactions = () => {
   const queryClient = useQueryClient();
@@ -24,6 +24,15 @@ export const useTransactions = () => {
     },
   });
 
+  // UPDATE MUTATION
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateTransactionDto }) => api.patch<Transaction>(`/transactions/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    }
+  })
+
   // --- MUTATION: Delete a transaction ---
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/transactions/${id}`),
@@ -41,6 +50,7 @@ export const useTransactions = () => {
     
     // Actions
     addTransaction: createMutation.mutateAsync,
+    updateTransaction: updateMutation.mutateAsync,
     removeTransaction: deleteMutation.mutateAsync,
     
     // Status indicators for UI (e.g., showing a spinner on the Save button)

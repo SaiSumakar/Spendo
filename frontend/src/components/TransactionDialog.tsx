@@ -20,27 +20,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-import { Loader2 } from 'lucide-react';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
 
 import {
     ExpenseType,
   type CreateTransactionDto,
+  type Transaction,
   type TransactionFormValues,
 } from '../types/transaction.types';
+import { Trash2 } from 'lucide-react';
 
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: CreateTransactionDto) => Promise<unknown>;
+  transaction?: Transaction | null;
+  onDelete: (id: string) => void; // New Prop
 }
 
 export const TransactionDialog = ({
   open,
   onOpenChange,
   onSave,
+  transaction,
+  onDelete
 }: TransactionDialogProps) => {
+  const isEditMode = !!transaction;
   const { subscriptions } = useSubscriptions();
 
   const {
@@ -64,8 +69,14 @@ export const TransactionDialog = ({
 
   const selectedSubId = watch('subscriptionId');
 
+  const toDateInputValue = (d: Date | string) =>
+    new Date(d).toISOString().slice(0, 10);
+
+
   // ---------- Auto-fill from subscription ----------
   useEffect(() => {
+    if (isEditMode) return;
+
     if (selectedSubId && selectedSubId !== 'none') {
       const sub = subscriptions.find((s) => s.id === selectedSubId);
       if (sub) {
@@ -75,12 +86,36 @@ export const TransactionDialog = ({
         setValue('type', ExpenseType.EXPENSE);
       }
     }
-  }, [selectedSubId, subscriptions, setValue]);
+  }, [selectedSubId, subscriptions, setValue, isEditMode]);
+
 
   // ---------- Reset when dialog opens ----------
   useEffect(() => {
-    if (open) reset();
-  }, [open, reset]);
+    if (!open) return;
+
+    if (transaction) {
+      reset({
+        description: transaction.description ?? '',
+        amount: String(transaction.amount),
+        type: transaction.type,
+        category: transaction.category ?? 'General',
+        notes: transaction.notes ?? '',
+        date: new Date(transaction.date),
+        subscriptionId: transaction.subscriptionId ?? 'none',
+      });
+    } else {
+      reset({
+        description: '',
+        amount: '',
+        type: ExpenseType.EXPENSE,
+        category: 'General',
+        notes: '',
+        date: new Date(),
+        subscriptionId: 'none',
+      });
+    }
+  }, [open, transaction, reset]);
+
 
   // ---------- Submit ----------
   const onSubmit = async (form: TransactionFormValues) => {
@@ -90,7 +125,7 @@ export const TransactionDialog = ({
       description: form.description,
       category: form.category || undefined,
       notes: form.notes || undefined,
-      date: form.date.toISOString(), // satisfies backend Date validator when transform enabled
+      date: form.date.toISOString(), // Must be ISO string for backend
       subscriptionId: form.subscriptionId === 'none' ? null : form.subscriptionId,
     };
 
@@ -98,11 +133,18 @@ export const TransactionDialog = ({
     onOpenChange(false);
   };
 
+  const handleDelete = () => {
+    if (transaction?.id) {
+      onDelete(transaction.id);
+      // onOpenChange(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
-          <DialogTitle>Log Transaction</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Transaction' : 'Log Transaction'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -128,8 +170,8 @@ export const TransactionDialog = ({
           <div className="space-y-2">
             <Label>Link to Subscription (Optional)</Label>
             <Select
+              value={watch('subscriptionId')}
               onValueChange={(v) => setValue('subscriptionId', v)}
-              defaultValue="none"
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a subscription" />
@@ -172,6 +214,7 @@ export const TransactionDialog = ({
               <Label>Date</Label>
               <Input
                 type="date"
+                value={toDateInputValue(watch('date'))}
                 onChange={(e) =>
                   setValue('date', new Date(e.target.value))
                 }
@@ -192,14 +235,17 @@ export const TransactionDialog = ({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
+            <div className="w-full flex items-center justify-between">
+              {isEditMode && (
+                <Button type="button" variant="destructive" onClick={handleDelete}>
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                </Button>
+              )}
 
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save Transaction
-            </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : (isEditMode ? 'Update' : 'Add')}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

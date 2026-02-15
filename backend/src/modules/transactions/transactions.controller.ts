@@ -26,8 +26,8 @@ export class TransactionsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
-    return this.transactionsService.update(+id, updateTransactionDto);
+  update(@CurrentUser('userId') userId: string, @Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
+    return this.transactionsService.update(id, userId, updateTransactionDto);
   }
 
   @Delete(':id')

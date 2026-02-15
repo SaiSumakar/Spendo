@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Search, Plus, Filter, Download } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
+import type { CreateTransactionDto, Transaction, UpdateTransactionDto } from '@/types/transaction.types';
 
 export default function TransactionsPage() {
-  const { transactions, isLoading, addTransaction } = useTransactions();
+  const { transactions, isLoading, addTransaction, updateTransaction, removeTransaction } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // Grouping Logic: Group transactions by date
   const groupedTransactions = transactions.reduce((groups: any, transaction: any) => {
@@ -33,6 +35,46 @@ export default function TransactionsPage() {
     return format(date, 'MMMM dd, yyyy');
   };
 
+  const handleSave = async (data: CreateTransactionDto | UpdateTransactionDto) => {
+    try {
+      if (selectedTransaction) {
+        // Edit Mode
+        console.log("in edit mode ans saving")
+        await updateTransaction({ 
+          id: selectedTransaction.id, 
+          data: data as UpdateTransactionDto 
+        });
+      } else {
+        // Add Mode
+        await addTransaction(data as CreateTransactionDto);
+      }
+      setIsDialogOpen(false); // Close only on success
+    } catch (error) {
+      console.error("Failed to save subscription", error);
+    }
+  };
+
+  const handleEdit = (txn: Transaction) => {
+    setSelectedTransaction(txn);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      if (confirm("Are you sure you want to delete this transaction?")) {
+        await removeTransaction(id);
+        setIsDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to delete transaction", error);
+    }
+  };
+
+  const handleAddNew = () => {
+    setSelectedTransaction(null);
+    setIsDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       
@@ -43,7 +85,7 @@ export default function TransactionsPage() {
           <Button variant="outline" className="flex-1 sm:flex-none gap-2">
             <Download className="w-4 h-4" /> Export
           </Button>
-          <Button onClick={() => setIsDialogOpen(true)} className="flex-1 sm:flex-none gap-2">
+          <Button onClick={handleAddNew} className="flex-1 sm:flex-none gap-2">
             <Plus className="w-4 h-4" /> Add Transaction
           </Button>
         </div>
@@ -86,7 +128,7 @@ export default function TransactionsPage() {
               </h3>
               <div className="space-y-2">
                 {groupedTransactions[date].map((tx: any) => (
-                  <TransactionListItem key={tx.id} transaction={tx} />
+                  <TransactionListItem key={tx.id} transaction={tx} onClick={() => handleEdit(tx)} />
                 ))}
               </div>
             </div>
@@ -97,7 +139,9 @@ export default function TransactionsPage() {
       <TransactionDialog 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
-        onSave={addTransaction} 
+        onSave={handleSave}
+        transaction={selectedTransaction}
+        onDelete={handleDelete}
       />
     </div>
   );

@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 // import type { Subscription } from '../pages/data/mockSubscriptions';
 import type { Subscription } from '../types/subscription.types';
+import { getCurrencySymbol } from '@/utils/currencySymbol';
+import { useSettings } from '@/hooks/useSettings';
 
 interface SubscriptionItemProps {
   subscription: Subscription;
@@ -13,16 +15,16 @@ interface SubscriptionItemProps {
 
 export const SubscriptionListItem = ({ subscription, onClick }: SubscriptionItemProps) => {
   const isTrial = subscription.isTrial;
-  const currencySymbol = subscription.currency === 'USD' ? '$' : subscription.currency === 'INR' ? '₹' : '€';
+  const currencySymbol = getCurrencySymbol(useSettings().settings.currency);
 
   // Fallback for nextBillingDate if not calculated yet
   const displayDate = subscription.nextBillingDate || subscription.startDate;
 
-  return (
-    <div 
-      onClick={onClick}
-      className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 bg-card border rounded-xl shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer space-y-4 sm:space-y-0"
-    >
+return (
+  <div
+    onClick={onClick}
+    className="group grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr] gap-4 items-center p-5 bg-card border rounded-xl shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer"
+  >
       <div className="flex items-center gap-4">
         <div className={`h-12 w-12 rounded-full flex items-center justify-center ${isTrial ? 'bg-amber-100 text-amber-600' : 'bg-primary/10 text-primary'}`}>
           <CreditCard className="w-6 h-6" />
@@ -33,25 +35,35 @@ export const SubscriptionListItem = ({ subscription, onClick }: SubscriptionItem
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center sm:items-end gap-2">
         <div className="text-right hidden sm:block">
-           <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-             <CalendarClock className="w-3 h-3" /> Next Bill
-           </p>
-           <p className="font-medium">
-             {format(new Date(displayDate), 'MMM dd, yyyy')}
-           </p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+            <CalendarClock className="w-3 h-3" /> Next Bill
+          </p>
+          <p className="font-medium">
+            {format(new Date(displayDate), 'MMM dd, yyyy')}
+          </p>
         </div>
-        {isTrial && <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Free Trial</Badge>}
+
+        {isTrial && (
+          <Badge variant="secondary" className="bg-amber-100 text-amber-800 self-center">
+            Free Trial
+          </Badge>
+        )}
       </div>
 
-      <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-         <div className="text-right">
-           <p className="font-bold text-xl">{currencySymbol}{Number(subscription.price)}</p>
-         </div>
-         <Button variant="ghost" size="icon" className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-           <MoreVertical className="w-5 h-5" />
-         </Button>
+      <div className="flex items-center justify-end gap-3">
+        <p className="font-bold text-xl whitespace-nowrap">
+          {currencySymbol}{Number(subscription.price)}
+        </p>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <MoreVertical className="w-5 h-5" />
+        </Button>
       </div>
     </div>
   );

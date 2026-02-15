@@ -50,7 +50,7 @@ export const SubscriptionDialog = ({
           isTrial: subscription.isTrial,
         });
       } else {
-        reset({ currency: 'USD', frequency: 'MONTHLY', isTrial: false });
+        reset({ currency: 'INR', frequency: 'MONTHLY', isTrial: false });
       }
     }
   }, [open, subscription, reset]);

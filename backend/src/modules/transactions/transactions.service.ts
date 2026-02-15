@@ -36,8 +36,24 @@ export class TransactionsService {
     })
   }
 
-  update(id: number, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${id} transaction`;
+  async update(id: string, userId: string, dto: UpdateTransactionDto) {
+    const txn = await this.transactionRepo.findOne({ where: { id, userId }});
+
+    if (!txn) {
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+    }
+
+    // normalize start date
+    const date: Date = dto.date
+      ? new Date(dto.date)
+      : txn.date;
+
+    Object.assign(txn, {
+      ...dto,
+      date,
+    });
+
+    return this.transactionRepo.save(txn);
   }
 
   async remove(userId: string, id: string) {

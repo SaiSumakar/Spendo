@@ -33,6 +33,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSettings } from '@/hooks/useSettings';
 import { cn } from '@/lib/utils';
+import { getCurrencySymbol } from '@/utils/currencySymbol';
 
 
 export default function SettingsPage() {
@@ -287,7 +288,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                     <Label>Monthly Budget Limit</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(settings.currency)}</span>
                       <Input 
                         type="number" 
                         className="pl-8 font-mono" 
