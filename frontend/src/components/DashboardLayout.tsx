@@ -1,8 +1,5 @@
 // apps/web/src/features/dashboard/DashboardLayout.tsx
 import {
-  LayoutDashboard,
-  CreditCard,
-  Settings,
   LogOut,
   Bell,
   Menu,
@@ -14,12 +11,10 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import api from "@/lib/axios"
 import { useAuthStore } from "@/stores/useAuthStore"
+import { dashboardRoutes } from "@/config/dashboardRoutes"
+import { Outlet } from "react-router-dom"
 
-export const DashboardLayout = ({
-  children,
-}: {
-  children: React.ReactNode
-}) => {
+export const DashboardLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
@@ -34,6 +29,11 @@ export const DashboardLayout = ({
     }
   };
 
+  const currentRoute = dashboardRoutes.find(route =>
+    location.pathname.startsWith(route.path)
+  )
+
+  const pageTitle = currentRoute?.label ?? "Overview"
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-900 flex">
@@ -74,30 +74,18 @@ export const DashboardLayout = ({
 
         {/* Navigation */}
         <nav className="flex flex-col gap-2 flex-1">
-          <SidebarItem
-            to="/dashboard"
-            icon={LayoutDashboard}
-            label="Dashboard"
-            collapsed={collapsed}
-            active={location.pathname === "/dashboard"}
-          />
-
-          <SidebarItem
-            to="/subscriptions"
-            icon={CreditCard}
-            label="Subscriptions"
-            collapsed={collapsed}
-            active={location.pathname === "/subscriptions"}
-          />
-
-          <SidebarItem
-            to="/settings"
-            icon={Settings}
-            label="Settings"
-            collapsed={collapsed}
-            active={location.pathname === "/settings"}
-          />
+          {dashboardRoutes.map((route) => (
+            <SidebarItem
+              key={route.path}
+              to={route.path}
+              icon={route.icon}
+              label={route.label}
+              collapsed={collapsed}
+              active={location.pathname.startsWith(route.path)}
+            />
+          ))}
         </nav>
+
 
         {/* Logout */}
         <div className="border-t pt-4">
@@ -119,7 +107,7 @@ export const DashboardLayout = ({
       <main className="flex-1 flex flex-col">
         {/* Top Header */}
         <header className="h-16 border-b bg-background/60 backdrop-blur flex items-center justify-between px-6 sticky top-0 z-10">
-          <h2 className="font-semibold text-lg">Overview</h2>
+          <h2 className="font-semibold text-lg">{pageTitle}</h2>
 
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" className="rounded-full">
@@ -134,7 +122,7 @@ export const DashboardLayout = ({
 
         {/* Page Content */}
         <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
-          {children}
+          <Outlet />
         </div>
       </main>
     </div>

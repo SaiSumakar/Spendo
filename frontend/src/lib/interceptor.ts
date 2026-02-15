@@ -29,7 +29,8 @@ api.interceptors.response.use(
       url.includes("/auth/login") ||
       url.includes("/auth/signup") ||
       url.includes("/auth/refresh") ||
-      url.includes("/auth/logout");
+      url.includes("/auth/logout") ||
+      url.includes("/users/profile");
 
     if (
       status === 401 &&
@@ -54,14 +55,18 @@ api.interceptors.response.use(
         processQueue();
         return api(originalRequest); // retry original request
       } catch (refreshError) {
+        console.log("REFRESH FAILED", refreshError);
         isRefreshing = false;
         processQueue(refreshError);
 
+        const { isAuthenticated } = useAuthStore.getState();
+
         useAuthStore.getState().logout();
-        // only redirect if NOT already on login page
-        if (!window.location.pathname.includes("/login")) {
-            window.location.href = "/login";
+
+        if (isAuthenticated && !window.location.pathname.includes("/login")) {
+          window.location.href = "/login";
         }
+
         return Promise.reject(refreshError);
       }
     }

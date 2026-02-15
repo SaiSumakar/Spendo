@@ -25,8 +25,8 @@ export interface Subscription {
   currency: Currency;
   frequency: BillingFrequency;
   category?: string;
-  startDate: string;      // ISO Date String (YYYY-MM-DD)
-  nextBillingDate: string; // ISO Date String (YYYY-MM-DD)
+  startDate: Date;      // ISO Date String (YYYY-MM-DD)
+  nextBillingDate: Date; // ISO Date String (YYYY-MM-DD)
   websiteUrl?: string;
   isTrial: boolean;
   userId: string;

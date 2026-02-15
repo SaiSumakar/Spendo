@@ -1,6 +1,5 @@
 // apps/web/src/features/subscriptions/SubscriptionsPage.tsx
 import { useState } from 'react';
-import { DashboardLayout } from '../components/DashboardLayout';
 import { SubscriptionDialog } from '../components/SubscriptionDialog';
 import { SubscriptionListItem } from '../components/SubscriptionListItem';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,6 @@ export default function SubscriptionsPage() {
   const { 
     subscriptions, 
     isLoading, 
-    isError, 
     createSubscription, 
     updateSubscription, 
     deleteSubscription, 
@@ -80,57 +78,52 @@ export default function SubscriptionsPage() {
   ) ?? [];
 
   return (
-    <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Subscriptions</h1>
-            <p className="text-muted-foreground">Manage your recurring payments and trials.</p>
-          </div>
-          <Button onClick={handleAddNew} className="gap-2">
-            <Plus className="w-4 h-4" /> Add Subscription
-          </Button>
-        </div>
-
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search subscriptions..." 
-              className="pl-9 bg-background" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="w-4 h-4" />
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          {isLoading ? (
-            <p>Loading your finances...</p>
-          ) : (
-            filteredSubscriptions.map((sub: Subscription) => (
-              <SubscriptionListItem 
-                key={sub.id} 
-                subscription={sub} 
-                onClick={() => handleEdit(sub)} 
-              />
-            ))
-          )}
-        </div>
-
-        <SubscriptionDialog 
-          open={isDialogOpen} 
-          onOpenChange={setIsDialogOpen} 
-          subscription={selectedSubscription}
-          onSave={handleSave}   // <--- Passed Handler
-          onDelete={handleDelete} // <--- Passed Handler
-        />
-        
+    <div className="space-y-6">
+      
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <p className="text-muted-foreground">Manage your recurring payments and trials.</p>
+        <Button onClick={handleAddNew} className="gap-2">
+          <Plus className="w-4 h-4" /> Add Subscription
+        </Button>
       </div>
-    </DashboardLayout>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search subscriptions..." 
+            className="pl-9 bg-background" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Button variant="outline" size="icon">
+          <Filter className="w-4 h-4" />
+        </Button>
+      </div>
+
+      <div className="space-y-4">
+        {isLoading ? (
+          <p>Loading your finances...</p>
+        ) : (
+          filteredSubscriptions.map((sub: Subscription) => (
+            <SubscriptionListItem 
+              key={sub.id} 
+              subscription={sub} 
+              onClick={() => handleEdit(sub)} 
+            />
+          ))
+        )}
+      </div>
+
+      <SubscriptionDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen} 
+        subscription={selectedSubscription}
+        onSave={handleSave}   // <--- Passed Handler
+        onDelete={handleDelete} // <--- Passed Handler
+      />
+      
+    </div>
   );
 }

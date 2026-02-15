@@ -3,31 +3,38 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subscription, BillingFrequency } from './entities/subscription.entity';
-import { Not, Repository } from 'typeorm';
-import { addMonths, addYears, addWeeks, parseISO, sub } from 'date-fns';
+import { Repository } from 'typeorm';
+import { addMonths, addYears, addWeeks } from 'date-fns';
+
+
+//  we changed the startdate and nextbillingdate type to Date from string
+//  change the service to handle it accordingly --------------------------------------
 
 @Injectable()
 export class SubscriptionsService {
 
   constructor(@InjectRepository(Subscription) private subRepo: Repository<Subscription>) {}
 
-  private calcNextBillingDate(startDate: string, frequency: BillingFrequency): Date {
-    const start = parseISO(startDate);
+  private calcNextBillingDate(startDate: Date, frequency: BillingFrequency): Date {
     switch (frequency) {
-      case BillingFrequency.WEEKLY: return addWeeks(start, 1);
-      case BillingFrequency.YEARLY: return addYears(start, 1);
+      case BillingFrequency.WEEKLY: return addWeeks(startDate, 1);
+      case BillingFrequency.YEARLY: return addYears(startDate, 1);
       case BillingFrequency.MONTHLY:
       default:
-        return addMonths(start, 1);
+        return addMonths(startDate, 1);
     }
   }
 
   async create(userId:string, dto: CreateSubscriptionDto) {
-    const nextbillingDate = this.calcNextBillingDate(dto.startDate, dto.frequency);
+
+    const startDate = new Date(dto.startDate);
+
+    const nextbillingDate = this.calcNextBillingDate(startDate, dto.frequency);
     const subscription = this.subRepo.create({
       ...dto,
       userId,
-      nextBillingDate: nextbillingDate.toISOString().split('T')[0],
+      startDate,
+      nextBillingDate: nextbillingDate,
     })
     return this.subRepo.save(subscription);
   }
@@ -47,22 +54,31 @@ export class SubscriptionsService {
 
   async update(id: string, userId: string, dto: UpdateSubscriptionDto) {
     const sub = await this.subRepo.findOne({ where: { id, userId }});
-    
-    if(!sub) {
+
+    if (!sub) {
       throw new NotFoundException(`Subscription with id ${id} not found`);
     }
 
+    // normalize start date
+    const startDate: Date = dto.startDate
+      ? new Date(dto.startDate)
+      : sub.startDate;
+
+    const frequency = dto.frequency ?? sub.frequency;
+
+    // recalc if needed
     if (dto.startDate || dto.frequency) {
-      const newStart = dto.startDate || sub.startDate;
-      const newFreq = dto.frequency || sub.frequency;
-      
-      const newNextBilling = this.calcNextBillingDate(newStart, newFreq);
-      sub.nextBillingDate = newNextBilling.toISOString().split('T')[0];
+      sub.nextBillingDate = this.calcNextBillingDate(startDate, frequency);
     }
-    Object.assign(sub, dto);
-    
+
+    Object.assign(sub, {
+      ...dto,
+      startDate,
+    });
+
     return this.subRepo.save(sub);
   }
+
 
   async remove(id: string, userId: string) {
     const sub = await this.subRepo.findOne({ where: { id, userId }});

@@ -6,7 +6,6 @@ import {
   Wallet, 
   Loader2
 } from 'lucide-react';
-import { DashboardLayout } from '../components/DashboardLayout';
 import { 
   KpiCard, 
   VelocityChart, 
@@ -55,7 +54,7 @@ export default function DashboardPage() {
   if (isError) return <div>Error loading financial data.</div>;
 
   return (
-    <DashboardLayout>
+    <div className='w-full space-y-4'>
       
       {/* 1. THE PULSE (Top Row KPIs) */}
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -111,6 +110,6 @@ export default function DashboardPage() {
         />
       </section>
 
-    </DashboardLayout>
+    </div>
   );
 }

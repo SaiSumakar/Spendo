@@ -12,6 +12,8 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import SettingsPage from './pages/SettingsPage';
+import TransactionsPage from './pages/TransactionsPage';
+import { DashboardLayout } from './components/DashboardLayout';
 
 function App() {
   const setUser = useAuthStore((state) => state.setUser);
@@ -55,9 +57,12 @@ function App() {
         
         {/* PROTECTED ROUTES */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/subscriptions" element={<SubscriptionsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/subscriptions" element={<SubscriptionsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
+          </Route>
         </Route>
       </Routes>
     </Router>
