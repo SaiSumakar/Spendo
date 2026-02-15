@@ -14,7 +14,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe())
+  app.useGlobalPipes(new ValidationPipe({ transform: true }))
 
   const config = new DocumentBuilder().setTitle('Spendo')
     .setDescription('Spendo API Description')

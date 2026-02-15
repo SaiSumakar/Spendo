@@ -1,9 +1,11 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, IsUUID, IsDate, IsEnum, MaxLength } from 'class-validator';
 import { ExpenseType } from '../entities/transaction.entity';
+import { Type } from 'class-transformer';
 
 export class CreateTransactionDto {
 
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   amount: number; 
 
@@ -21,6 +23,7 @@ export class CreateTransactionDto {
   category?: string;
 
   @IsNotEmpty()
+  @Type(() => Date)
   @IsDate()
   date: Date;
 

@@ -7,6 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { TransactionsModule } from './modules/transactions/transactions.module';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     UsersModule,
     AuthModule,
     SubscriptionsModule,
-    DashboardModule
+    DashboardModule,
+    TransactionsModule
   ],
   controllers: [AppController],
   providers: [AppService],
