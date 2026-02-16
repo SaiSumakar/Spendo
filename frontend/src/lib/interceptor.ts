@@ -30,8 +30,8 @@ api.interceptors.response.use(
       url.includes("/auth/signup") ||
       url.includes("/auth/refresh") ||
       url.includes("/auth/logout") ||
-      url.includes("/users/profile");
-
+      url.includes("/users/profile") ||
+      url.includes("/auth/change-password");
     if (
       status === 401 &&
       !originalRequest._retry &&

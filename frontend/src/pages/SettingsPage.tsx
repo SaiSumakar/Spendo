@@ -34,27 +34,72 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSettings } from '@/hooks/useSettings';
 import { cn } from '@/lib/utils';
 import { getCurrencySymbol } from '@/utils/currencySymbol';
-
+import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
+import api from '@/lib/axios';
+import { useAuthStore } from "@/stores/useAuthStore";
+import type { ChangePasswordPayload } from '../components/ChangePasswordDialog';
+import { PasswordChangedSuccessDialog } from "../components/PasswordChangedSuccessDialog";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account');
   
   const { settings, isLoading, updateSettings, isSaving, exportData, deleteAccount } = useSettings();
   const [form, setForm] = useState<any>(null);
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [pwdSuccessOpen, setPwdSuccessOpen] = useState(false);
+  const [logoutCountdown, setLogoutCountdown] = useState(10);
 
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-
-  
   useEffect(() => {
     if (settings) setForm(settings);
   }, [settings]);
-  console.log("settings brp", settings, form);
+
+  useEffect(() => {
+    if (!pwdSuccessOpen) return;
+
+    setLogoutCountdown(10);
+
+    const id = setInterval(() => {
+      setLogoutCountdown((s) => s - 1);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [pwdSuccessOpen]);
+
+  useEffect(() => {
+    if (logoutCountdown === 0 && pwdSuccessOpen) {
+      handleReLogin();
+    }
+  }, [logoutCountdown, pwdSuccessOpen]);
   
-  // Simulation of an API call
   const handleSave = async () => {
-    // console.log("new ones", form);
     await updateSettings(form);
+  };
+
+  const handleReLogin = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {}
+
+    useAuthStore.getState().logout();
+    window.location.href = '/login';
+  };
+
+
+  const handlePasswordChange = async (data: ChangePasswordPayload) => {
+    const res = await api.patch('/auth/change-password', data);
+
+    console.log("password reset success", res);
+
+    // if(res.data?.requireReauth) {
+    //   await api.post('/auth/logout')
+    //   useAuthStore.getState().logout();
+    //   window.location.href = '/login';
+    setPwdOpen(false);
+    setPwdSuccessOpen(true);
+
+    // }
   };
 
   const menuItems = [
@@ -144,9 +189,19 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" defaultValue={"********"} disabled className="bg-muted text-muted-foreground" />
-                  <p className="text-[0.8rem] text-muted-foreground">Password cannot be changed in demo mode.</p>
+                  <Label>Password</Label>
+                  <div className="flex items-center gap-3">
+                    <Input value="***********" disabled className="bg-muted" />
+                    <Button
+                      variant="outline"
+                      onClick={() => setPwdOpen(true)}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                  <p className="text-[0.8rem] text-muted-foreground">
+                    Changing password will sign you out on all devices.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -351,6 +406,16 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+      <ChangePasswordDialog
+        open={pwdOpen}
+        onOpenChange={setPwdOpen}
+        onSubmit={handlePasswordChange}
+      />
+      <PasswordChangedSuccessDialog
+        open={pwdSuccessOpen}
+        seconds={logoutCountdown}
+        onContinue={handleReLogin}
+      />
     </div>
   );
 }

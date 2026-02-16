@@ -65,6 +65,14 @@ export class UsersService {
       .getOne()
   }
 
+  async findByIdWithPassword(id: string): Promise<User | null> {
+    return this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :id', {id})
+      .getOne();
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto) {
     if (Object.keys(updateUserDto).length === 0) {
       throw new BadRequestException('No fields provided for update');
@@ -79,12 +87,14 @@ export class UsersService {
       throw new NotFoundException(`User with id ${id} not found`)
     }
 
-    if(updateUserDto.password) {
-      // user.password = bcrypt.hash(updateUserDto.password, 10)
-      user.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
     const savedUser = await this.userRepo.save(user);
     return savedUser;
+  }
+
+  async updatePassword(userId: string, newHash: string) {
+    await this.userRepo.update(userId, {
+      password: newHash,
+    });
   }
 
   async remove(id: string) {

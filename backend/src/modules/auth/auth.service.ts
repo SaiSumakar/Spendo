@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +33,35 @@ export class AuthService {
         }
 
         return this.generateTokens(user);
+    }
+
+    async changePassword(userId: string, dto: ChangePasswordDto) {
+        const { oldPassword, newPassword, confirmNewPassword } = dto;
+
+        if(newPassword !== confirmNewPassword) {
+            throw new BadRequestException('Passwords do not match');
+        }
+
+        const user = await this.userService.findByIdWithPassword(userId);
+        if(!user) {
+            throw new NotFoundException(`User with id ${userId} not found`);
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+        if(!isMatch) {
+            throw new BadRequestException('Old password is incorrect');
+        }
+
+        const newPassHash = await bcrypt.hash(newPassword, 10);
+        await this.userService.updatePassword(userId, newPassHash);
+        // invalidate refresh tokens
+        await this.userService.clearRefreshTokenHash(userId);
+
+        return { 
+            message: 'Password updated successfully',
+            requireReauth: true,
+        };
     }
 
     async logout(userId: string) {
