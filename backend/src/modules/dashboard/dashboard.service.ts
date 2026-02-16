@@ -34,10 +34,11 @@ export class DashboardService {
         // kpi calculation
         const activeSubsCount = subs.length;
         const trialsCount = subs.filter(sub => sub.isTrial).length;
-        const monthlyBurn = subs.reduce((sum, sub) => sum + this.getMonthlyCost(sub), 0);
+        const monthlyBurn = subs.reduce((sum, sub) => {
+            if (sub.isTrial) return sum; // skip free trials
+            return sum + this.getMonthlyCost(sub);
+        }, 0);
         const safeToSpend = Number(user?.monthlyLimit) - monthlyBurn;
-        const userCurrency = user?.currency
-        const monthlyLimit = Number(user?.monthlyLimit)
 
         const categoryTotals = {};
         subs.forEach(sub => {
@@ -85,12 +86,10 @@ export class DashboardService {
                 activeSubs: activeSubsCount,
                 trialWatch: trialsCount,
                 safeToSpend: safeToSpend > 0 ? safeToSpend : 0,
-                monthlyLimit: monthlyLimit
             },
             categoryData,
             velocityData,
             upcomingBills,
-            userCurrency
         }
     }
 }
