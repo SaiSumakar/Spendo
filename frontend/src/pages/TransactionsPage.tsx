@@ -9,12 +9,14 @@ import { Search, Plus, Filter, Download } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import type { CreateTransactionDto, Transaction, UpdateTransactionDto } from '@/types/transaction.types';
+import { useSettings } from '@/hooks/useSettings';
 
 export default function TransactionsPage() {
   const { transactions, isLoading, addTransaction, updateTransaction, removeTransaction } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const userCurrency = useSettings()?.settings?.currency;
 
   // Grouping Logic: Group transactions by date
   const groupedTransactions = transactions.reduce((groups: any, transaction: any) => {
@@ -142,6 +144,7 @@ export default function TransactionsPage() {
         onSave={handleSave}
         transaction={selectedTransaction}
         onDelete={handleDelete}
+        userCurrency={userCurrency}
       />
     </div>
   );

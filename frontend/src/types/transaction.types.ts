@@ -9,7 +9,7 @@ export const ExpenseType = {
   EXPENSE: 'expense',
 } as const;
 
-type ExpenseType = typeof ExpenseType[keyof typeof ExpenseType];
+export type ExpenseType = typeof ExpenseType[keyof typeof ExpenseType];
 
 /* ----------------------------- */
 /* API Transaction Shape         */

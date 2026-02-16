@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import { Badge } from '@/components/ui/badge';
-import { format, isSameDay, eachDayOfInterval, endOfMonth } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval, addDays } from 'date-fns';
 
 type Bill = {
   id: string;
@@ -42,7 +42,7 @@ export const KpiCard = ({ title, value, subtext, icon: Icon, alert = false }: an
 export const VelocityChart = ({ data }: { data: any[] }) => (
   <Card className="col-span-full lg:col-span-4 h-87.5">
     <CardHeader>
-      <CardTitle>Spending Velocity (Last 7 Days)</CardTitle>
+      <CardTitle>Your Spending Over the Last Week</CardTitle>
     </CardHeader>
     <CardContent className="h-70">
       <ResponsiveContainer width="100%" height="100%">
@@ -67,7 +67,7 @@ export const VelocityChart = ({ data }: { data: any[] }) => (
 export const CategoryDonut = ({ data }: { data: any[] }) => (
   <Card className="col-span-full lg:col-span-2 h-87.5">
     <CardHeader>
-      <CardTitle>Cost Distribution</CardTitle>
+      <CardTitle>Subscription Breakdown</CardTitle>
     </CardHeader>
     <CardContent className="h-70 flex items-center justify-center">
       <ResponsiveContainer width="100%" height="100%">
@@ -75,9 +75,9 @@ export const CategoryDonut = ({ data }: { data: any[] }) => (
           <Pie
             data={data}
             cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
+            cy="47%"
+            innerRadius={70}
+            outerRadius={90}
             paddingAngle={5}
             dataKey="value"
             shape={(props: any) => {
@@ -140,13 +140,13 @@ export const BillingTimeline = ({
 
   const days = eachDayOfInterval({
     start: today,
-    end: endOfMonth(today),
+    end: addDays(today, 20),
   });
 
   return (
     <Card className="col-span-full w-full max-w-full overflow-hidden">
       <CardHeader>
-        <CardTitle>Billing Forecast (This Month)</CardTitle>
+        <CardTitle>Your Upcoming Bills (Next 3 Weeks)</CardTitle>
       </CardHeader>
 
       <CardContent className="w-full max-w-full overflow-hidden">

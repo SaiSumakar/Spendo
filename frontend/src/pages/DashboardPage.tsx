@@ -21,8 +21,9 @@ export default function DashboardPage() {
 
   const { data, isLoading, isError } = useDashboard();
   const userCurrency = useSettings()?.settings?.currency;
-
-  console.log("financial data", data, isError, isLoading);
+  const userMonthlyLimit = Number(useSettings()?.settings?.monthlyLimit);
+  
+  console.log("financial data", data);
 
   if (isLoading) return (
     <div className="h-screen w-full flex items-center justify-center">
@@ -64,7 +65,7 @@ export default function DashboardPage() {
       <section>
         <BudgetProgressCard
           spent={data.kpiStats.runRate}
-          budget={data.kpiStats.monthlyLimit}
+          budget={userMonthlyLimit}
           currency={userCurrency}
           formatCurrency={formatCurrency}
         />
