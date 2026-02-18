@@ -9,7 +9,9 @@ import {
   Save,
   Monitor,
   Loader2,
-  Trash2
+  Trash2,
+  Mail,
+  Key
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +41,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ChangePasswordPayload } from '../components/ChangePasswordDialog';
 import { PasswordChangedSuccessDialog } from "../components/PasswordChangedSuccessDialog";
+import ChangeEmailDialog from '@/components/ChangeEmailDialog';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account');
@@ -48,6 +51,8 @@ export default function SettingsPage() {
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdSuccessOpen, setPwdSuccessOpen] = useState(false);
   const [logoutCountdown, setLogoutCountdown] = useState(10);
+
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -101,6 +106,27 @@ export default function SettingsPage() {
 
     // }
   };
+
+  // --- EMAIL CHANGE HANDLERS ---
+  const handleSendEmailOtp = async (email: string): Promise<void> => {
+    await api.post("/auth/email-change/send-otp", { email });
+  };
+
+  const handleResendEmailOtp = async (email: string): Promise<void> => {
+    await api.post("/auth/email-change/resend", { email });
+  };
+
+  const handleVerifyEmailOtp = async (
+    otp: string,
+    email: string
+  ): Promise<void> => {
+    await api.post("/auth/email-change/verify", { otp, email });
+
+    setEmailOpen(false);
+    window.location.reload();
+  };
+
+
 
   const menuItems = [
     { id: 'account', label: 'Account', icon: User },
@@ -181,11 +207,19 @@ export default function SettingsPage() {
                     }
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" defaultValue={form.email} disabled className="bg-muted text-muted-foreground" />
-                  <p className="text-[0.8rem] text-muted-foreground">Email cannot be changed in demo mode.</p>
+                  <div className="flex items-center gap-3">
+                    <Input id="email" defaultValue={form.email} disabled className="bg-muted text-muted-foreground" />
+                    <Button
+                      variant="outline"
+                      onClick={() => setEmailOpen(true)}
+                    >
+                      <Mail className="w-4 h-4" />
+                      Update Email
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -196,7 +230,8 @@ export default function SettingsPage() {
                       variant="outline"
                       onClick={() => setPwdOpen(true)}
                     >
-                      Change
+                      <Key className="w-4 h-4" />
+                        Reset Password
                     </Button>
                   </div>
                   <p className="text-[0.8rem] text-muted-foreground">
@@ -415,6 +450,14 @@ export default function SettingsPage() {
         open={pwdSuccessOpen}
         seconds={logoutCountdown}
         onContinue={handleReLogin}
+      />
+      <ChangeEmailDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        currentEmail={form.email}
+        sendOtp={handleSendEmailOtp}
+        verifyOtp={handleVerifyEmailOtp}
+        resendOtp={handleResendEmailOtp}
       />
     </div>
   );

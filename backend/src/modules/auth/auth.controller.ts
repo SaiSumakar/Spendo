@@ -7,6 +7,7 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SendEmailChangeOtpDto, VerifyEmailChangeOtpDto } from './dto/email-change.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -68,6 +69,24 @@ export class AuthController {
     this.setAuthCookies(res, tokens.access_token, tokens.refresh_token);
 
     return { user: tokens.user };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('email-change/send-otp')
+  sendOtp(@CurrentUser('userId') userId: string, @Body() dto: SendEmailChangeOtpDto) {
+    return this.authService.sendEmailChangeOtp(userId, dto.email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('email-change/verify')
+  verifyOtp( @CurrentUser('userId') userId: string, @Body() dto: VerifyEmailChangeOtpDto) {
+    return this.authService.verifyEmailChangeOtp(userId, dto.otp, dto.email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('email-change/resend')
+  resendOtp(@CurrentUser('userId') userId: string,@Body() dto: SendEmailChangeOtpDto) {
+    return this.authService.resendEmailChangeOtp(userId, dto.email);
   }
 
   private setAuthCookies(res: express.Response, access: string, refresh: string) {

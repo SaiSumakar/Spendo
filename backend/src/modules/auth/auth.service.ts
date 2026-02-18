@@ -6,13 +6,20 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import Redis from 'ioredis';
+import { MailService } from 'src/common/mail/mail.service';
+
 @Injectable()
 export class AuthService {
     constructor(
         private userService: UsersService,
         private jwtService: JwtService,
         private config: ConfigService,
+        private mail: MailService,
+        @InjectRedis() private redis: Redis,
     ) {}
+
 
     async signup(dto: CreateUserDto) {
         const user = await this.userService.create(dto)
@@ -128,4 +135,73 @@ export class AuthService {
         const hash = await bcrypt.hash(token, 10);
         await this.userService.updateRefreshTokenHash(userId, hash);
     }
+
+    private generateOtp() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    private key(userId: string) {
+        return `email-change:${userId}`;
+    }
+
+    async sendEmailChangeOtp(userId: string, newEmail: string) {
+        console.log("redis url", this.config.get('REDIS_URL'))
+        const exists = await this.userService.findByEmail(newEmail);
+        if (exists) throw new BadRequestException('Email already in use');
+
+        const otp = this.generateOtp();
+        const hash = await bcrypt.hash(otp, 10);
+
+        await this.redis.set(
+            this.key(userId),
+            JSON.stringify({
+                newEmail,
+                otpHash: hash,
+                attempts: 0,
+            }),
+            'EX',
+            600,
+        );
+
+        await this.mail.sendOtpEmail(newEmail, otp);
+
+        return { message: 'OTP sent' };
+    }
+
+    async verifyEmailChangeOtp(userId: string, otp: string, email: string) {
+        const raw = await this.redis.get(this.key(userId));
+        if (!raw) throw new BadRequestException('OTP expired');
+
+        const data = JSON.parse(raw);
+
+        if (data.newEmail !== email) {
+            throw new BadRequestException('Email mismatch');
+        }
+
+        if (data.attempts >= 5) {
+            throw new BadRequestException('Too many attempts');
+        }
+
+        const match = await bcrypt.compare(otp, data.otpHash);
+        if (!match) {
+            data.attempts++;
+            await this.redis.set(this.key(userId), JSON.stringify(data), 'EX', 600);
+            throw new BadRequestException('Invalid OTP');
+        }
+
+        await this.userService.update(userId, { email });
+        await this.userService.clearRefreshTokenHash(userId);
+        await this.redis.del(this.key(userId));
+
+        return {
+            message: 'Email updated',
+            requireReauth: true,
+        };
+    }
+
+    async resendEmailChangeOtp(userId: string, email: string) {
+        return this.sendEmailChangeOtp(userId, email);
+    }
+
+
 }
